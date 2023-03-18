@@ -1,0 +1,107 @@
+using UnityEngine;
+
+public class PlayerController : MonoBehaviour
+{
+
+    //we coud also use serialized field and make these variables as private
+    //it will be visible in inspector but will be private so it will be easy to work wuth variable with same name across files
+    
+    [Header("References")]
+    public CharacterController controller;
+    public Transform cam;
+    public LayerMask groundLayer;
+    public Transform GroundCheck;
+    [Space(2)]
+
+    [Header("Gameplay Values")]
+    [Tooltip("The movement speed of the player character")]
+    public float playerSpeed=3.5f;
+
+    [Tooltip("The speed at which the player character rotates facing towards the desired direction")]
+    public float rotateSmoothness=0.1f;
+
+    [Tooltip("The amount of downward force acting on the player")]
+    public float gravity=-9.8f;
+    
+    [Tooltip("The height of jump the player can achieve")]
+    public float JumpForce=10f;
+
+    #region Private Fields
+    float currentVelocity;
+    bool jumpPressed;
+    bool isGrounded;
+    float GroundCheckRadius=0.4f;
+    Vector3 velocity;
+    #endregion
+
+    //public fields hidden 
+
+    // Update is called once per frame
+    void Update()
+    {
+        isGrounded=Physics.CheckSphere(GroundCheck.position,GroundCheckRadius,groundLayer);
+        if(isGrounded && velocity.y < 0)
+        {
+            velocity.y=-2f;
+        }
+         
+        //adding gravity or downward force to the player.
+        velocity.y += gravity*Time.deltaTime;
+        controller.Move(velocity *Time.deltaTime);
+       
+        movement();
+        Jump();
+    }
+    void movement()
+    {
+        #region Player Input
+        //getting the input directions from the player
+        //as in 2d or when looking from the top down
+        //horizontal is for the x axis right (d key=1 )(a key= -1)
+        //same with vertical z axis(in this case vertical is up down in ground not in air) 
+        float xInput=Input.GetAxisRaw("Horizontal");
+        float zInput=Input.GetAxisRaw("Vertical");
+        bool jumpPressed=Input.GetButtonDown("Jump");
+        #endregion
+
+
+        //vector3moveDir is assigned the direction input from the user
+        //move is a function in controller that moves the transform of the the player
+        //at the multiplied speed.
+        Vector3 moveDir=new Vector3(xInput,0f,zInput).normalized;
+
+        if(moveDir.magnitude>0.1f) 
+        {
+
+            #region Player Rotation
+            //the atan2 function returns the radiants between th direction we are looking,
+            //and the desired direction.In unity when facing the z axis its 0 and the radiants increase in clockwise direction
+            //so when we give the direction in x axis then the y axis the difference in the angles is found
+            //rad2deg function is used to cnvert radiants to degrees for rottion of player.
+            float RotateYAngle=Mathf.Atan2(moveDir.x,moveDir.z)*Mathf.Rad2Deg + cam.eulerAngles.y;
+
+            //SmoothDampAngle is used to make the rotations smooth
+            float rotateY=Mathf.SmoothDampAngle(transform.eulerAngles.y,RotateYAngle,ref  currentVelocity, rotateSmoothness);
+            
+            //quaternion is used for rotations in unity and euler is used to give value for respective axis
+            transform.rotation=Quaternion.Euler(0f,rotateY,0f);
+
+
+            //here we are converting the angle we re looking with respect t th forward direction(z axis)
+            //to direction so we can mve in that direction
+            Vector3 HeadingDir=Quaternion.Euler(0f,RotateYAngle,0f) *Vector3.forward;
+            #endregion
+           
+            
+            controller.Move(HeadingDir.normalized*playerSpeed*Time.deltaTime);
+        }
+    }
+    
+    void Jump()
+    {
+        if(Input.GetButtonDown("Jump") && isGrounded)
+        {
+            velocity.y=JumpForce;
+        }
+    }
+}

@@ -5,7 +5,9 @@ public class PlayerController : MonoBehaviour
 
     //we coud also use serialized field and make these variables as private
     //it will be visible in inspector but will be private so it will be easy to work wuth variable with same name across files
-    
+    //-----------
+    //Trying out Jenkins in MLOPS class
+    //------------
     [Header("References")]
     public CharacterController controller;
     public Transform cam;
